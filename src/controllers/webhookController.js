@@ -72,12 +72,11 @@ exports.handleStatus = asyncHandler(async (request, reply) => {
     // Store metadata for each result
     for (const result of payload.results?.internet || []) {
       // DEBUG: Log actual webhook payload structure to identify matchPercentage field
-      logger.info("DIAGNOSTIC: Completion webhook result object", {
-        scanId,
-        resultId: result.id,
-        resultKeys: Object.keys(result),
-        resultSample: JSON.stringify(result, null, 2),
-      });
+      logger.info(
+        `DIAGNOSTIC COMPLETION WEBHOOK - scanId: ${scanId}, resultId: ${result.id}\n` +
+          `Available keys: ${Object.keys(result).join(", ")}\n` +
+          `Full object: ${JSON.stringify(result, null, 2)}`
+      );
 
       scanStore.storeResultMetadata(scanId, result.id, {
         url: result.url || "",
@@ -137,17 +136,15 @@ exports.handleResultExport = asyncHandler(async (request, reply) => {
   const exportedData = request.body;
 
   // DEBUG: Log actual export webhook payload structure
-  logger.info("DIAGNOSTIC: Export result webhook payload", {
-    scanId,
-    resultId,
-    exportedDataKeys: Object.keys(exportedData || {}),
-    exportedDataSample: JSON.stringify(exportedData, null, 2),
-    // Log specific fields that might contain percentage
-    matchPercentage: exportedData?.matchPercentage,
-    matchedPercentage: exportedData?.matchedPercentage,
-    identicalPercentage: exportedData?.identicalPercentage,
-    statisticsObj: exportedData?.statistics,
-  });
+  logger.info(
+    `DIAGNOSTIC EXPORT WEBHOOK - scanId: ${scanId}, resultId: ${resultId}\n` +
+      `Available keys: ${Object.keys(exportedData || {}).join(", ")}\n` +
+      `matchPercentage: ${exportedData?.matchPercentage}\n` +
+      `matchedPercentage: ${exportedData?.matchedPercentage}\n` +
+      `identicalPercentage: ${exportedData?.identicalPercentage}\n` +
+      `statistics: ${JSON.stringify(exportedData?.statistics)}\n` +
+      `Full object: ${JSON.stringify(exportedData, null, 2)}`
+  );
 
   // Store the exported result
   scanStore.storeExportedResult(scanId, resultId, exportedData);
