@@ -14,6 +14,7 @@ function createScanRecord(text, options = {}) {
     summary: null,
     credits: null,
     results: [],
+    resultMetadata: {},
     exported: {
       results: {},
       crawled: null,
@@ -65,6 +66,18 @@ function addResult(scanId, result) {
   }
 
   record.results.push(result);
+  record.lastUpdated = new Date().toISOString();
+  scans.set(scanId, record);
+  return record;
+}
+
+function storeResultMetadata(scanId, resultId, metadata) {
+  const record = getScan(scanId);
+  if (!record) {
+    return null;
+  }
+
+  record.resultMetadata[resultId] = metadata;
   record.lastUpdated = new Date().toISOString();
   scans.set(scanId, record);
   return record;
@@ -158,6 +171,7 @@ module.exports = {
   listScans,
   updateStatus,
   addResult,
+  storeResultMetadata,
   storeExportedResult,
   storeCrawled,
   storePdf,

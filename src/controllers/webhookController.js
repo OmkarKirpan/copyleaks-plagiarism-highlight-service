@@ -68,6 +68,16 @@ exports.handleStatus = asyncHandler(async (request, reply) => {
     });
 
     const resultIds = (payload.results?.internet || []).map((result) => result.id);
+
+    // Store metadata for each result
+    for (const result of payload.results?.internet || []) {
+      scanStore.storeResultMetadata(scanId, result.id, {
+        url: result.url || "",
+        title: result.title || "",
+        matchPercentage: result.matchPercentage || 0,
+      });
+    }
+
     if (resultIds.length && !record.exportStarted) {
       try {
         scanStore.markExportStarted(scanId);

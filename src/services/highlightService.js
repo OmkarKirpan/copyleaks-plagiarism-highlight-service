@@ -2,15 +2,21 @@ const TextHighlighter = require("../utils/text-highlighter");
 
 const textHighlighter = new TextHighlighter();
 
-function extractMatches(results = {}) {
+function extractMatches(results = {}, resultMetadata = {}) {
   const matches = [];
   const matchTypes = ["identical", "minorChanges", "relatedMeaning"];
 
-  for (const result of Object.values(results)) {
+  for (const [resultId, result] of Object.entries(results)) {
     const comparison = result?.text?.comparison;
     if (!comparison) {
       continue;
     }
+
+    // Look up metadata for this result
+    const metadata = resultMetadata[resultId] || {};
+    const source = metadata.url || metadata.title || "Detected source";
+    const sourceUrl = metadata.url || "";
+    const matchPercentage = metadata.matchPercentage || 0;
 
     for (const type of matchTypes) {
       const data = comparison?.[type];
@@ -24,9 +30,9 @@ function extractMatches(results = {}) {
           start: chars.starts[index],
           length: chars.lengths[index],
           matchType: type,
-          source: result?.url || result?.title || "Detected source",
-          sourceUrl: result?.url,
-          matchPercentage: result?.matchPercentage || 0,
+          source,
+          sourceUrl,
+          matchPercentage,
         });
       }
     }
@@ -51,7 +57,7 @@ function generateHighlightPayload(record) {
     throw new Error("No text available for highlighting. Wait for crawled payload.");
   }
 
-  const matches = extractMatches(record?.exported?.results);
+  const matches = extractMatches(record?.exported?.results, record?.resultMetadata);
   const result = textHighlighter.combineHighlights(text, null, matches);
   return {
     scanId: record.scanId,
