@@ -26,6 +26,11 @@ function buildServer() {
     genReqId: (req) => req.headers["x-request-id"] || crypto.randomUUID(),
   });
 
+  // Add content type parser for PDF webhooks from Copyleaks
+  app.addContentTypeParser("application/pdf", { parseAs: "buffer" }, (_req, body, done) => {
+    done(null, body);
+  });
+
   // Set Zod as the validator and serializer
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);

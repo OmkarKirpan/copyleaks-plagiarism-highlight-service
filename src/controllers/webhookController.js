@@ -126,7 +126,18 @@ exports.handleResultExport = asyncHandler(async (request, reply) => {
     return reply.code(202).send({ ignored: true });
   }
 
-  scanStore.storeExportedResult(scanId, resultId, request.body);
+  const exportedData = request.body;
+
+  // Store the exported result
+  scanStore.storeExportedResult(scanId, resultId, exportedData);
+
+  // Update metadata with matchPercentage from exported result
+  const existingMetadata = record.resultMetadata[resultId] || {};
+  scanStore.storeResultMetadata(scanId, resultId, {
+    ...existingMetadata,
+    matchPercentage: exportedData.matchPercentage || 0,
+  });
+
   reply.send({ received: true });
 });
 
