@@ -5,6 +5,7 @@ const scanStore = require("../storage/scanStore");
 const { plagiarismScanner } = require("../services/copyleaksService");
 const { generateHighlightPayload } = require("../services/highlightService");
 const { NotFoundError, ConflictError } = require("../errors/custom-errors");
+const TextHighlighter = require("../utils/text-highlighter");
 
 const buildScanOptions = (options = {}) => ({
   sandbox: config.copyleaks.sandboxMode,
@@ -118,4 +119,13 @@ exports.deleteScan = asyncHandler(async (request, reply) => {
 
   scanStore.deleteScan(scanId);
   reply.send({ success: true });
+});
+
+exports.getStylesheet = asyncHandler(async (_request, reply) => {
+  const highlighter = new TextHighlighter();
+  const css = highlighter.getStylesheet();
+
+  reply
+    .type("text/css")
+    .send(css);
 });

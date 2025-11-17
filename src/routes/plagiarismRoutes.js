@@ -21,6 +21,15 @@ async function plagiarismRoutes(fastify) {
     handler: controller.listScans,
   });
 
+  // GET /plagiarism/css - Get CSS stylesheet for highlights
+  fastify.get("/css", {
+    schema: {
+      tags: ["plagiarism"],
+      description: "Get CSS stylesheet for plagiarism highlights",
+    },
+    handler: controller.getStylesheet,
+  });
+
   // GET /plagiarism/:scanId - Get scan details
   fastify.get("/:scanId", {
     schema: {
