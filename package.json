@@ -17,6 +17,7 @@
 		"@fastify/request-context": "^6.2.1",
 		"@fastify/swagger": "^9.6.1",
 		"@fastify/swagger-ui": "^5.2.3",
+		"axios": "^1.13.2",
 		"dotenv": "^17.2.3",
 		"fastify": "^5.6.2",
 		"fastify-graceful-shutdown": "^5.0.0",
