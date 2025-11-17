@@ -73,6 +73,18 @@
       "response": []
     },
     {
+      "name": "Get CSS Stylesheet",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/plagiarism/css",
+          "host": ["{{base_url}}"],
+          "path": ["plagiarism", "css"]
+        }
+      },
+      "response": []
+    },
+    {
       "name": "Delete Scan",
       "request": {
         "method": "DELETE",
