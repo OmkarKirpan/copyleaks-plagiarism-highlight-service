@@ -1,0 +1,212 @@
+{
+  "info": {
+    "name": "Plagiarism Highlight Service",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "b6cebe8a-17f3-4f6a-8d63-1bf066d9f4b9",
+    "description": "Requests for the authentication-free plagiarism microservice. Configure the `base_url` variable to point to your deployment."
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": ["{{base_url}}"],
+          "path": ["health"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Submit Scan",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"Paste the text you want to scan for plagiarism here.\",\n  \"options\": {\n    \"sensitivityLevel\": 3,\n    \"includeHtml\": true\n  }\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/plagiarism",
+          "host": ["{{base_url}}"],
+          "path": ["plagiarism"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "List Scans",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/plagiarism",
+          "host": ["{{base_url}}"],
+          "path": ["plagiarism"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Scan",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/plagiarism/{{scanId}}",
+          "host": ["{{base_url}}"],
+          "path": ["plagiarism", "{{scanId}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Get Highlights",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/plagiarism/{{scanId}}/highlight",
+          "host": ["{{base_url}}"],
+          "path": ["plagiarism", "{{scanId}}", "highlight"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Delete Scan",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{base_url}}/plagiarism/{{scanId}}",
+          "host": ["{{base_url}}"],
+          "path": ["plagiarism", "{{scanId}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Status (completed/error/creditsChecked)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"results\": {\n    \"internet\": [],\n    \"score\": {\"aggregatedScore\": 0}\n  },\n  \"scannedDocument\": {\n    \"totalWords\": 0\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhook/completed/{{scanId}}",
+              "host": ["{{base_url}}"],
+              "path": ["webhook", "completed", "{{scanId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "New Result",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"result-id\",\n  \"url\": \"https://source.example\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhook/new-result/{{scanId}}",
+              "host": ["{{base_url}}"],
+              "path": ["webhook", "new-result", "{{scanId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Result",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": {\n    \"comparison\": {\n      \"identical\": {\n        \"source\": {\n          \"chars\": {\"starts\": [0], \"lengths\": [50]}\n        }\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhook/result/{{scanId}}/{{resultId}}",
+              "host": ["{{base_url}}"],
+              "path": ["webhook", "result", "{{scanId}}", "{{resultId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Crawled",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": {\"value\": \"Original text body...\"}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhook/crawled/{{scanId}}",
+              "host": ["{{base_url}}"],
+              "path": ["webhook", "crawled", "{{scanId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PDF",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"report\": \"base64-payload\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhook/pdf/{{scanId}}",
+              "host": ["{{base_url}}"],
+              "path": ["webhook", "pdf", "{{scanId}}"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Completed",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"completed\": true,\n  \"tasks\": [{\"isHealthy\": true}]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/webhook/export-completed/{{scanId}}",
+              "host": ["{{base_url}}"],
+              "path": ["webhook", "export-completed", "{{scanId}}"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4000",
+      "type": "string"
+    },
+    {
+      "key": "scanId",
+      "value": "scan-demo",
+      "type": "string"
+    },
+    {
+      "key": "resultId",
+      "value": "result-demo",
+      "type": "string"
+    }
+  ]
+}

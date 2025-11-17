@@ -1,0 +1,33 @@
+{
+	"name": "plagiarism-highlight-service",
+	"version": "1.0.0",
+	"private": true,
+	"type": "commonjs",
+	"description": "Fastify microservice for Copyleaks plagiarism scanning with highlights",
+	"main": "src/server.js",
+	"scripts": {
+		"start": "node src/server.js",
+		"dev": "NODE_ENV=development node --watch src/server.js",
+		"lint": "biome check .",
+		"test": "vitest",
+		"test:ui": "vitest --ui",
+		"test:coverage": "vitest --coverage"
+	},
+	"dependencies": {
+		"@fastify/request-context": "^6.2.1",
+		"@fastify/swagger": "^9.6.1",
+		"@fastify/swagger-ui": "^5.2.3",
+		"dotenv": "^17.2.3",
+		"fastify": "^5.6.2",
+		"fastify-graceful-shutdown": "^5.0.0",
+		"fastify-type-provider-zod": "^6.1.0",
+		"pino": "^10.1.0",
+		"zod": "^4.1.12"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.6",
+		"@vitest/ui": "^4.0.9",
+		"pino-pretty": "^13.1.2",
+		"vitest": "^4.0.9"
+	}
+}

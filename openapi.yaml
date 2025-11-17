@@ -1,0 +1,433 @@
+openapi: 3.0.3
+info:
+  title: Plagiarism Highlight Microservice
+  version: 1.0.0
+  description: |
+    Lightweight Copyleaks-based plagiarism microservice that exposes scan submission, status, highlight, and webhook endpoints without additional authentication.
+servers:
+  - url: https://api.example.com
+    description: Production server (replace with your domain)
+  - url: http://localhost:4000
+    description: Local development server
+paths:
+  /health:
+    get:
+      summary: Health probe
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+  /plagiarism:
+    post:
+      summary: Submit text for plagiarism scanning
+      description: Accepts plain text and forwards it to Copyleaks. Returns immediately while processing continues asynchronously.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScanSubmissionRequest'
+      responses:
+        '202':
+          description: Scan accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanSubmissionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Copyleaks rejected the submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      summary: List scans
+      responses:
+        '200':
+          description: Collection of scans ordered by creation time
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 2
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScanSummary'
+  /plagiarism/{scanId}:
+    get:
+      summary: Get scan details
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      responses:
+        '200':
+          description: Scan metadata with Copyleaks webhook data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanDetail'
+        '404':
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Delete scan
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      responses:
+        '200':
+          description: Scan deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '404':
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /plagiarism/{scanId}/highlight:
+    get:
+      summary: Retrieve highlight-ready payload
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      responses:
+        '200':
+          description: Highlight metadata with HTML snippet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HighlightResponse'
+        '404':
+          description: Scan not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Export data not ready yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /webhook/{status}/{scanId}:
+    post:
+      summary: Copyleaks status webhook
+      description: Receives `completed`, `error`, or `creditsChecked` notifications and kicks off export flows.
+      parameters:
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/ScanId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Pass-through payload from Copyleaks
+      responses:
+        '200':
+          description: Payload stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+  /webhook/new-result/{scanId}:
+    post:
+      summary: Copyleaks new result webhook
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Match stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+  /webhook/result/{scanId}/{resultId}:
+    post:
+      summary: Copyleaks export payload webhook
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+        - $ref: '#/components/parameters/ResultId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Export stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+  /webhook/crawled/{scanId}:
+    post:
+      summary: Crawled text webhook
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Crawled data captured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+  /webhook/pdf/{scanId}:
+    post:
+      summary: PDF webhook
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: PDF data stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+  /webhook/export-completed/{scanId}:
+    post:
+      summary: Export completion webhook
+      parameters:
+        - $ref: '#/components/parameters/ScanId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Export lifecycle recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AckResponse'
+components:
+  parameters:
+    ScanId:
+      name: scanId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Unique scan identifier (e.g., scan-1234)
+    ResultId:
+      name: resultId
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Copyleaks result identifier
+    Status:
+      name: status
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [completed, error, creditsChecked]
+  schemas:
+    ScanSubmissionRequest:
+      type: object
+      required: [text]
+      properties:
+        text:
+          type: string
+          description: Plain text content to scan
+          example: "This paragraph might contain copied sentences."
+        options:
+          type: object
+          properties:
+            sensitivityLevel:
+              type: integer
+              minimum: 1
+              maximum: 5
+              example: 3
+            includeHtml:
+              type: boolean
+              example: true
+            expiration:
+              type: integer
+              description: Minutes until Copyleaks expires the scan
+    ScanSubmissionResponse:
+      type: object
+      properties:
+        scanId:
+          type: string
+        status:
+          type: string
+          example: pending
+        message:
+          type: string
+    ScanSummary:
+      type: object
+      properties:
+        scanId:
+          type: string
+        status:
+          type: string
+          enum: [queued, pending, completed, error]
+        createdAt:
+          type: string
+          format: date-time
+        lastUpdated:
+          type: string
+          format: date-time
+        summary:
+          type: object
+          description: Copyleaks completion summary
+        credits:
+          type: integer
+          nullable: true
+        exportStarted:
+          type: boolean
+        exportedResults:
+          type: integer
+        exportedCompletedAt:
+          type: string
+          format: date-time
+          nullable: true
+        originalTextLength:
+          type: integer
+        options:
+          type: object
+    ScanDetail:
+      allOf:
+        - $ref: '#/components/schemas/ScanSummary'
+        - type: object
+          properties:
+            summary:
+              type: object
+              properties:
+                totalResults:
+                  type: integer
+                totalWords:
+                  type: integer
+                score:
+                  type: number
+            results:
+              type: array
+              description: Raw Copyleaks incremental results
+              items:
+                type: object
+            exported:
+              type: object
+              properties:
+                results:
+                  type: array
+                  items:
+                    type: string
+                crawled:
+                  type: boolean
+                pdfReport:
+                  type: boolean
+                completedAt:
+                  type: string
+                  format: date-time
+                  nullable: true
+    HighlightResponse:
+      type: object
+      properties:
+        scanId:
+          type: string
+        textLength:
+          type: integer
+        statistics:
+          type: object
+          properties:
+            totalHighlights:
+              type: integer
+            grammarErrors:
+              type: integer
+            plagiarismMatches:
+              type: integer
+        highlights:
+          type: array
+          description: Segmented highlight metadata from the highlighter
+          items:
+            type: object
+            properties:
+              start:
+                type: integer
+              end:
+                type: integer
+              length:
+                type: integer
+              highlights:
+                type: array
+                items:
+                  type: object
+        highlightedHTML:
+          type: string
+          description: HTML snippet with span tags and data attributes
+        lineReport:
+          type: array
+          items:
+            type: object
+            properties:
+              lineNumber:
+                type: integer
+              lineText:
+                type: string
+              hasIssues:
+                type: boolean
+              highlights:
+                type: array
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: ok
+        service:
+          type: string
+        environment:
+          type: string
+        webhookBaseUrl:
+          type: string
+    AckResponse:
+      type: object
+      properties:
+        received:
+          type: boolean
+          example: true
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+          nullable: true
