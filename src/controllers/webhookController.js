@@ -59,11 +59,13 @@ exports.handleStatus = asyncHandler(async (request, reply) => {
   }
 
   if (status === STATUS_COMPLETED) {
+    const totalWords = payload.scannedDocument?.totalWords || 0;
+
     scanStore.updateStatus(scanId, "completed", {
       summary: {
         totalResults: payload.results?.internet?.length || 0,
         score: payload.results?.score?.aggregatedScore || 0,
-        totalWords: payload.scannedDocument?.totalWords || 0,
+        totalWords: totalWords,
       },
     });
 
@@ -71,17 +73,11 @@ exports.handleStatus = asyncHandler(async (request, reply) => {
 
     // Store metadata for each result
     for (const result of payload.results?.internet || []) {
-      // DEBUG: Log actual webhook payload structure to identify matchPercentage field
-      logger.info(
-        `DIAGNOSTIC COMPLETION WEBHOOK - scanId: ${scanId}, resultId: ${result.id}\n` +
-          `Available keys: ${Object.keys(result).join(", ")}\n` +
-          `Full object: ${JSON.stringify(result, null, 2)}`
-      );
-
       scanStore.storeResultMetadata(scanId, result.id, {
         url: result.url || "",
         title: result.title || "",
-        matchPercentage: result.matchPercentage || 0,
+        // matchPercentage will be calculated when export result is received
+        matchPercentage: 0,
       });
     }
 
@@ -135,25 +131,38 @@ exports.handleResultExport = asyncHandler(async (request, reply) => {
 
   const exportedData = request.body;
 
-  // DEBUG: Log actual export webhook payload structure
-  logger.info(
-    `DIAGNOSTIC EXPORT WEBHOOK - scanId: ${scanId}, resultId: ${resultId}\n` +
-      `Available keys: ${Object.keys(exportedData || {}).join(", ")}\n` +
-      `matchPercentage: ${exportedData?.matchPercentage}\n` +
-      `matchedPercentage: ${exportedData?.matchedPercentage}\n` +
-      `identicalPercentage: ${exportedData?.identicalPercentage}\n` +
-      `statistics: ${JSON.stringify(exportedData?.statistics)}\n` +
-      `Full object: ${JSON.stringify(exportedData, null, 2)}`
-  );
-
   // Store the exported result
   scanStore.storeExportedResult(scanId, resultId, exportedData);
 
-  // Update metadata with matchPercentage from exported result
+  // Calculate matchPercentage from statistics
+  const statistics = exportedData?.statistics || {};
+  const identical = statistics.identical || 0;
+  const minorChanges = statistics.minorChanges || 0;
+  const relatedMeaning = statistics.relatedMeaning || 0;
+  const totalMatchedWords = identical + minorChanges + relatedMeaning;
+
+  // Get totalWords from scan summary (stored during completion webhook)
+  const totalWords = record.summary?.totalWords || 0;
+
+  // Calculate percentage (avoid division by zero)
+  let matchPercentage = 0;
+  if (totalWords > 0) {
+    matchPercentage = Math.round((totalMatchedWords / totalWords) * 100);
+  }
+
+  logger.info("Calculated matchPercentage", {
+    scanId,
+    resultId,
+    totalMatchedWords,
+    totalWords,
+    matchPercentage,
+  });
+
+  // Update metadata with calculated matchPercentage
   const existingMetadata = record.resultMetadata[resultId] || {};
   scanStore.storeResultMetadata(scanId, resultId, {
     ...existingMetadata,
-    matchPercentage: exportedData.matchPercentage || 0,
+    matchPercentage: matchPercentage,
   });
 
   reply.send({ received: true });
