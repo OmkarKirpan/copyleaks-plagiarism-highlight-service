@@ -6,13 +6,14 @@ async function start() {
   const server = buildServer();
 
   // Setup graceful shutdown handlers
-  server.gracefulShutdown((signal, next) => {
-    server.log.info(`Received ${signal}, starting graceful shutdown...`);
+  server.after(() => {
+    server.gracefulShutdown(async (signal) => {
+      server.log.info(`Received signal to shutdown: ${signal}`);
 
-    // Cleanup operations (e.g., close DB connections, flush logs, etc.)
-    // For now, we just log. Add more cleanup as needed.
-    server.log.info("Cleanup completed");
-    next();
+      // Cleanup operations (e.g., close DB connections, flush logs, etc.)
+      // For now, we just log. Add more cleanup as needed.
+      server.log.info("Cleanup completed");
+    });
   });
 
   try {
